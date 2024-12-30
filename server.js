@@ -50,6 +50,8 @@ app.get('/detail-chat/:user1_id/:user2_id', async (req,res)=>{
   }
 })
 
+
+
 const formatDateForMySQL = (isoDate) => {
   const date = new Date(isoDate);
   const year = date.getFullYear();
@@ -70,11 +72,8 @@ io.on('connection', (socket) => {
       (async () => {
         let session_exit_1 = 0;
         let session_exit_2 = 0;
-      
         try {
-          // Chuyển đổi thời gian
           const formattedSentAt = formatDateForMySQL(message.sent_at);
-          // Thực hiện chèn tin nhắn vào bảng private_message
           const sqlInsertMessage = `
             INSERT INTO private_message (content, sent_at, receiver_id, sender_id)
             VALUES (?, ?, ?, ?)
@@ -100,8 +99,6 @@ io.on('connection', (socket) => {
           session_exit_2 = results2.length > 0 ? 1 : 0;
       
           console.log("test: " + session_exit_1, session_exit_2);
-      
-          // Xử lý logic if-else
           if (session_exit_1 === 0 && session_exit_2 === 0) {
             const sqlInsertSession = `
               INSERT INTO session_message (user_id, message, user2_id, sent_at, user_sent, user_sent_name)
@@ -160,7 +157,16 @@ io.on('connection', (socket) => {
 
     });
 
+    // User 1 gửi thông tin user lên server
+    socket.on('call', (caller) => {
+      console.log(caller);
+      io.emit(`call_${caller.hash}`, caller);
+    });
 
+    socket.on(`response`, (message) => {
+      console.log("message response: ", message);
+      io.emit(`response_${message.hash}`, message);
+    });
 
     socket.on('disconnect', () => {
         console.log('A user disconnected');
