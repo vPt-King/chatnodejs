@@ -4,7 +4,8 @@ const http = require('http');
 const server = http.createServer(app);
 const socketio = require('socket.io');
 const port = 9001;
-const db = require("./db")
+const pool = require('./db');
+// const db = require("./db")
 const util = require('util');
 const io = socketio(server, {
   cors: {
@@ -16,9 +17,8 @@ const io = socketio(server, {
 app.get("/chat/:user_id", async (req,res)=>{
   user_id = req.params['user_id']
   try{
-    const query = util.promisify(db.query).bind(db);
     const sql = `SELECT session_message.id as message_id , session_message.message, session_message.user2_id as user2_id, session_message.user_sent_name as user_sent_name, session_message.user_sent as user_sent_id, user.username as user2_name, user.avatar_path as user2_avatar_path from session_message, user where session_message.user_id = ? and user.id = session_message.user2_id order by session_message.sent_at DESC;`;
-    const results = await query(sql, [user_id]);
+    const results = await pool.query(sql, [user_id]);
     res.status(200).json(results);
   }catch (error) {
     console.error('Lỗi khi truy vấn:', error.message);
@@ -31,7 +31,7 @@ app.get('/detail-chat/:user1_id/:user2_id', async (req,res)=>{
   user1_id = req.params['user1_id']
   user2_id = req.params['user2_id']
   try {
-    const query = util.promisify(db.query).bind(db);
+    // //const query = util.promisify(db.query).bind(db);
 
     const sql = `
       SELECT * FROM private_message 
@@ -41,7 +41,7 @@ app.get('/detail-chat/:user1_id/:user2_id', async (req,res)=>{
       ORDER BY private_message.sent_at DESC
     `;
 
-    const results = await query(sql, [user1_id, user2_id, user2_id, user1_id]);
+    const results = await pool.query(sql, [user1_id, user2_id, user2_id, user1_id]);
 
     res.status(200).json(results); // Trả về kết quả dạng JSON
   } catch (error) {
@@ -68,7 +68,7 @@ const formatDateForMySQL = (isoDate) => {
 io.on('connection', (socket) => {
     console.log('A user connected');
     socket.on('send_mess', ({ hash, message }) => {
-      const query = util.promisify(db.query).bind(db);
+      //const query = util.promisify(db.query).bind(db);
       (async () => {
         let session_exit_1 = 0;
         let session_exit_2 = 0;
@@ -84,18 +84,18 @@ io.on('connection', (socket) => {
             message.receiver_id,
             message.sender_id,
           ];
-          await query(sqlInsertMessage, values);
+          await pool.query(sqlInsertMessage, values);
           const sessionQuery1 = `
             SELECT * FROM session_message WHERE user_id = ? AND user2_id = ?
           `;
-          const results1 = await query(sessionQuery1, [message.sender_id, message.receiver_id]);
+          const results1 = await pool.query(sessionQuery1, [message.sender_id, message.receiver_id]);
           session_exit_1 = results1.length > 0 ? 1 : 0;
       
 
           const sessionQuery2 = `
             SELECT * FROM session_message WHERE user_id = ? AND user2_id = ?
           `;
-          const results2 = await query(sessionQuery2, [message.receiver_id, message.sender_id]);
+          const results2 = await pool.query(sessionQuery2, [message.receiver_id, message.sender_id]);
           session_exit_2 = results2.length > 0 ? 1 : 0;
       
           console.log("test: " + session_exit_1, session_exit_2);
@@ -120,8 +120,8 @@ io.on('connection', (socket) => {
               message.sender_id,
               message.user_sent_name
             ];
-            await query(sqlInsertSession, values1);
-            await query(sqlInsertSession, values2);
+            await pool.query(sqlInsertSession, values1);
+            await pool.query(sqlInsertSession, values2);
           } else if (session_exit_1 === 1 && session_exit_2 === 1) {
             const sqlUpdateSession = `
               UPDATE session_message
@@ -144,8 +144,8 @@ io.on('connection', (socket) => {
               message.receiver_id,
               message.sender_id,
             ];
-            await query(sqlUpdateSession, updateValues1);
-            await query(sqlUpdateSession, updateValues2);
+            await pool.query(sqlUpdateSession, updateValues1);
+            await pool.query(sqlUpdateSession, updateValues2);
           }
       
           console.log(`Message:`, message);
