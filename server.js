@@ -157,15 +157,58 @@ io.on('connection', (socket) => {
 
     });
 
-    // User 1 gửi thông tin user lên server
-    socket.on('call', (caller) => {
-      console.log(caller);
-      io.emit(`call_${caller.hash}`, caller);
+
+    socket.on('call', async (caller) => {
+      try{
+        console.log(caller);
+        const results = await pool.query("select user.call_status from user where user.id = ?", [caller.receiverId]);
+        receiver_status = parseInt(results[0][0].call_status);
+        if(receiver_status === 0)
+        {
+          const updateCallStatus = `UPDATE user SET call_status = ? WHERE user.id = ?`;
+          await pool.query(updateCallStatus,[1,caller.callerId]);
+          await pool.query(updateCallStatus,[1,caller.receiverId]);
+          io.emit(`call_${caller.hash}`, caller);
+        }
+        else{
+          const mess = "Người dùng đang bận";
+          console.log("Nguoi dung ban: ", mess);
+          io.emit(`call_${caller.callerId}`, mess);
+        }
+      }catch (err) {
+        console.error('Error:', err);
+      }
     });
 
-    socket.on(`response`, (message) => {
+    socket.on(`response`, async (message) => {
       console.log("message response: ", message);
-      io.emit(`response_${message.hash}`, message);
+      try{
+        if(message.response_status == "accept"){
+          io.emit(`response_${message.hash}`, message);
+        } else if(message.response_status == "deny")
+        {
+          const updateCallStatus = `UPDATE user SET call_status = ? WHERE user.id = ?`;
+          await pool.query(updateCallStatus,[0,message.callerId]);
+          await pool.query(updateCallStatus,[0,message.receiverId]);
+          const mess = "Người dùng 2 từ chối nghe máy";
+          io.emit(`call_${message.callerId}`, mess);
+        }
+      }catch (err){
+        console.error('Error:', err);
+      }
+    });
+
+
+    socket.on('call_ended', async (data) => {
+      console.log('Call ended: ', data);
+      try{
+        const updateCallStatus = `UPDATE user SET call_status = ? WHERE user.id = ?`;
+        await pool.query(updateCallStatus,[0,data.callerId]);
+        await pool.query(updateCallStatus,[0,data.receiverId]);
+        io.emit(`call_ended_${data.hash}`, { message: 'Cuộc gọi đã kết thúc', callerId: data.callerId, receiverId: data.receiverId });
+      }catch (err){
+        console.error('Error:', err);
+      }
     });
 
     socket.on('disconnect', () => {
@@ -173,7 +216,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start the server
+
 server.listen(port, () => {
     console.log(`Server is listening at the port: ${port}`);
 });

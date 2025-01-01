@@ -11,11 +11,13 @@ socket.on(`call_${hash}`, (caller)=>{
 
     const acceptButton = document.getElementById('accept');
     acceptButton.addEventListener('click', () => {
+        reply['callerId']='a57c9c83-9bec-4840-93b1-12c56f21ab86'
+        reply['receiverId']='9202c300-66b3-4ad3-925e-1bf4c68dec15'
         reply['user_name'] = 'VA'
         reply['user_avatar_path'] = '/avatar_path'
         reply['ip'] = "192.168.50.100";
         reply['hash'] = hash
-        reply['status'] = "accept"
+        reply['response_status'] = "accept"
         socket.emit(`response`, reply );
         console.log('User B accepted the call');
     });
@@ -23,7 +25,9 @@ socket.on(`call_${hash}`, (caller)=>{
 
     const rejectButton = document.getElementById('deny');
     rejectButton.addEventListener('click', () => {
-        reply['status'] = "deny"
+        reply['callerId']='a57c9c83-9bec-4840-93b1-12c56f21ab86'
+        reply['receiverId']='9202c300-66b3-4ad3-925e-1bf4c68dec15'
+        reply['response_status'] = "deny"
         reply['hash'] = hash
         socket.emit(`response`, reply );
         console.log('User B rejected the call');

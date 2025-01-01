@@ -43,7 +43,8 @@ socket.on(`response_${hash}`,(message) => {
 const sendMessageButton = document.getElementById('sendMessage');
 sendMessageButton.addEventListener('click', () => {
     const caller ={
-        "user_id" : id,
+        "receiverId":"9202c300-66b3-4ad3-925e-1bf4c68dec15",
+        "callerId" : id,
         "user_name":"Thanh vu",
         "user_avatar_path":"/avatar_path",
         "ip":"192.168.50.99",
