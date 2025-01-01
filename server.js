@@ -19,7 +19,7 @@ app.get("/chat/:user_id", async (req,res)=>{
   try{
     const sql = `SELECT session_message.id as message_id , session_message.message, session_message.user2_id as user2_id, session_message.user_sent_name as user_sent_name, session_message.user_sent as user_sent_id, user.username as user2_name, user.avatar_path as user2_avatar_path from session_message, user where session_message.user_id = ? and user.id = session_message.user2_id order by session_message.sent_at DESC;`;
     const results = await pool.query(sql, [user_id]);
-    res.status(200).json(results);
+    res.status(200).json(results[0]);
   }catch (error) {
     console.error('Lỗi khi truy vấn:', error.message);
     res.status(500).json({ error: 'Đã xảy ra lỗi khi truy vấn cơ sở dữ liệu.' });
@@ -43,7 +43,7 @@ app.get('/detail-chat/:user1_id/:user2_id', async (req,res)=>{
 
     const results = await pool.query(sql, [user1_id, user2_id, user2_id, user1_id]);
 
-    res.status(200).json(results); // Trả về kết quả dạng JSON
+    res.status(200).json(results[0]); // Trả về kết quả dạng JSON
   } catch (error) {
     console.error('Lỗi khi truy vấn:', error.message);
     res.status(500).json({ error: 'Đã xảy ra lỗi khi truy vấn cơ sở dữ liệu.' });
